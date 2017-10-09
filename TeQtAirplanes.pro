@@ -12,6 +12,7 @@ TARGET = TeQtAirplanes
 TEMPLATE = app
 CONFIG += c++1z
 
+LIBS += -lsfml-audio
 
 SOURCES += main.cpp \
     bullet.cpp \
@@ -25,8 +26,13 @@ HEADERS  += \
     player.hpp \
     entity.hpp \
     enemy.hpp \
-    game.hpp
+    game.hpp \
+    texItem.hpp \
+    ResourceManager.hpp
 
 FORMS    +=
 
 #QMAKE_CXXFLAGS += -std=gnu++14
+
+RESOURCES += \
+    resources.qrc

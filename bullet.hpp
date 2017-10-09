@@ -7,7 +7,7 @@ class QTimer;
 class Bullet : public Entity
 {
 public:
-    explicit Bullet(double x, double y, double w, double h,
+    explicit Bullet(Game *game, double x, double y, double w, double h,
                     double vx, double vy, QObject *parent = nullptr);
 public slots:
     virtual void move() override;

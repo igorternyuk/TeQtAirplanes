@@ -3,13 +3,15 @@
 #include <QObject>
 #include <QGraphicsRectItem>
 
+class Game;
+
 class Entity : public QObject, public QGraphicsRectItem
 {
     Q_OBJECT
 public:
-    explicit Entity(double x, double y, double w, double h,
+    explicit Entity(Game* game, double x, double y, double w, double h,
                     double vx, double vy, QObject *parent = nullptr);
-    explicit Entity(double x, double y, double w, double h,
+    explicit Entity(Game *game, double x, double y, double w, double h,
                     QPointF velocity, QObject *parent = nullptr);
     inline auto left() const noexcept { return pos().x(); }
     inline auto top() const noexcept { return pos().y(); }
@@ -23,5 +25,6 @@ public slots:
     virtual void move();
     virtual void destroy();
 protected:
+    Game* mGame;
     QPointF mVelocity;
 };

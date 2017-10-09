@@ -1,13 +1,15 @@
 #include "bullet.hpp"
+#include "game.hpp"
 #include "enemy.hpp"
 #include <QGraphicsScene>
 #include <QList>
 #include <QTimer>
+#include <typeinfo>
 #include <QDebug>
 
-Bullet::Bullet(double x, double y, double w, double h, double vx, double vy,
-               QObject *parent):
-    Entity(x,y,w,h,vx,vy, parent)
+Bullet::Bullet(Game* game, double x, double y, double w, double h, double vx,
+               double vy, QObject *parent):
+    Entity(game, x,y,w,h,vx,vy, parent)
 {
     mTimer = new QTimer();
     //connect
@@ -35,8 +37,12 @@ bool Bullet::hasCollisionWithEnemies()
     {
         for(auto &e: collidingEntities)
         {
-            if(typeid(*e) != typeid(Bullet) && typeid(*e) == typeid(Enemy))
+            //typeof()
+            if(typeid(*e) == typeid(Enemy))
             {
+                mGame->increaseScore();
+                mGame->playSound(Game::SoundID::EXPLOSION);
+                qDebug() << "Collision was detected";
                 scene()->removeItem(e);
                 scene()->removeItem(this);
                 delete e;

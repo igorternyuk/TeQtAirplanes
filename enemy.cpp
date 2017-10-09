@@ -1,11 +1,12 @@
 #include "enemy.hpp"
+#include "game.hpp"
 #include <QGraphicsScene>
 #include <QTimer>
 #include <cstdlib>
 #include <QDebug>
 
-Enemy::Enemy(double w, double h, double vy, QObject *parent):
-    Entity(rand() % 700,0,w,h,0,vy, parent)
+Enemy::Enemy(Game *game, double w, double h, double vy, QObject *parent):
+    Entity(game, rand() % int(Game::WINDOW_WIDTH - w),0,w,h,0,vy, parent)
 {
     mTimer = new QTimer();
     //connect
@@ -13,8 +14,20 @@ Enemy::Enemy(double w, double h, double vy, QObject *parent):
     mTimer->start(TIMER_DELAY);
 }
 
+void Enemy::move()
+{
+    if(bottom() >= Game::WINDOW_HEIGHT && !isBottomLineReached)
+    {
+        //qDebug() << "bottomLineReached";
+        emit bottomLineReached();
+        isBottomLineReached = true;
+    }
+    Entity::move();
+}
+
 void Enemy::destroy()
 {
-    qDebug() << "Enemy has been destoyed";
+    //qDebug() << "Enemy has been destoyed";
+    //disconnect(this, SIGNAL(bottomLineReached()), mGame, SLOT(decreaseHealth()));
     Entity::destroy();
 }

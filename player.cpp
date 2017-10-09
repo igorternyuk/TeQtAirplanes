@@ -1,15 +1,16 @@
 #include "player.hpp"
+#include "game.hpp"
 #include "bullet.hpp"
 #include <cmath>
 #include <QDebug>
 #include <QGraphicsScene>
 
-Player::Player(double x, double y, double w, double h,
+Player::Player(Game *game, double x, double y, double w, double h,
                double vx, QObject *parent):
-    Entity(x,y,w,h,vx,0.f,parent)
+    Entity(game, x,y,w,h,vx,0.f,parent)
 {}
 
-void Player::keyPressEvent(QKeyEvent *event)
+void Player::keyReleaseEvent(QKeyEvent *event)
 {
     switch(event->key())
     {
@@ -24,6 +25,7 @@ void Player::keyPressEvent(QKeyEvent *event)
             move();
         break;
     case Qt::Key_Space:
+        mGame->playSound(Game::SoundID::FIRE_BULLET);
         fireBullet();
         break;
     default:
@@ -33,7 +35,7 @@ void Player::keyPressEvent(QKeyEvent *event)
 
 void Player::fireBullet()
 {
-    Bullet *bullet = new Bullet(x() + (this->width() - BULLET_WIDTH) / 2,
+    Bullet *bullet = new Bullet(mGame, x() + (this->width() - BULLET_WIDTH) / 2,
                                 y() - BULLET_HEIGHT, BULLET_WIDTH,
                                 BULLET_HEIGHT, 0.f, BULLET_VELOCITY);
     bullet->setPos(x() + (this->width() - BULLET_WIDTH) / 2,y() - BULLET_HEIGHT - 1);
