@@ -7,7 +7,7 @@ class Enemy : public Entity
 {
     Q_OBJECT
 public:
-    explicit Enemy(Game* game, double w, double h, double vy,
+    explicit Enemy(Game* game, const QPixmap &image, double vy,
                    QObject *parent = nullptr);
 signals:
     void bottomLineReached();

@@ -4,15 +4,13 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = TeQtAirplanes
 TEMPLATE = app
 CONFIG += c++1z
-
-LIBS += -lsfml-audio
 
 SOURCES += main.cpp \
     bullet.cpp \
@@ -27,8 +25,7 @@ HEADERS  += \
     entity.hpp \
     enemy.hpp \
     game.hpp \
-    texItem.hpp \
-    ResourceManager.hpp
+    texItem.hpp
 
 FORMS    +=
 

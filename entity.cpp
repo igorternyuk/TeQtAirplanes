@@ -3,19 +3,19 @@
 #include <QGraphicsScene>
 #include <QDebug>
 
-Entity::Entity(Game *game, double x, double y, double w, double h,
+Entity::Entity(Game *game, double x, double y, const QPixmap &image,
                QPointF velocity, QObject *parent) :
-    QObject(parent), QGraphicsRectItem(x, y, w, h), mGame{game},
+    QObject(parent), QGraphicsPixmapItem(), mGame{game},
     mVelocity{velocity}
 {
-    this->setPos(x,y);
-    this->setRect(0, 0, w, h);
+    this->setPos(x, y);
+    this->setPixmap(image);
     connect(this, SIGNAL(outOfSceneBounds()), this, SLOT(destroy()));
 }
 
-Entity::Entity(Game *game, double x, double y, double w, double h, double vx,
-               double vy, QObject *parent):
-    Entity(game, x,y,w,h,QPointF(vx,vy), parent)
+Entity::Entity(Game* game, double x, double y, const QPixmap &image,
+               double vx, double vy, QObject *parent):
+    Entity(game, x,y,image,QPointF(vx,vy), parent)
 {}
 
 void Entity::move()
@@ -25,7 +25,6 @@ void Entity::move()
     if(right() < 0 || bottom() < 0 ||
        left() > Game::WINDOW_WIDTH || top() > Game::WINDOW_HEIGHT)
     {
-        //qDebug() << "Entity is out of bounds";
         emit outOfSceneBounds();
     }
 }

@@ -6,8 +6,9 @@
 #include <QGraphicsView>
 #include <QString>
 #include <QTimer>
+#include <QImage>
 #include <QDebug>
-//#include <QMediaPlayer>
+#include <QMediaPlayer>
 #include "player.hpp"
 #include "bullet.hpp"
 #include "enemy.hpp"
@@ -21,29 +22,45 @@ Game::Game()
     mView->setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     mView->setWindowTitle(mWindowTitle);
     mScene->setSceneRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    mScene->setBackgroundBrush(QBrush(QImage(":/gfx/background.png")));
     mView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     mView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
+    QPixmap img(":/gfx/player.png");
     mPlayer = new Player(this, (WINDOW_WIDTH - PLAYER_WIDTH) / 2,
-                         WINDOW_HEIGHT - PLAYER_HEIGHT,
-                         PLAYER_WIDTH, PLAYER_HEIGHT,
-                         PLAYER_VELOCITY, mView);
+                         WINDOW_HEIGHT - img.height(),
+                         img, PLAYER_VELOCITY, mView);
     mPlayer->setFlag(QGraphicsItem::ItemIsFocusable);
     mPlayer->setFocus();
     mScene->addItem(mPlayer);
 
-    mScore = new TextItem<int>(QString("SCORE"), 0, 0, 0, Qt::darkGreen);
+    mScore = new TextItem<int>(QString("SCORE"), 0, 0, 0, QFont("times", 16),
+                               Qt::darkGreen);
     mHealth = new TextItem<int>(QString("HEALTH"), PLAYER_HEALTH, 0, 25,
-                                Qt::darkRed);
+                                QFont("times", 16), Qt::darkRed);
+    mStatusLabel = new QGraphicsTextItem;
+    mStatusLabel->setFont(QFont("times", 80));
+    mStatusLabel->setDefaultTextColor(Qt::transparent);
+    mStatusLabel->setPlainText(QString(""));
+    mStatusLabel->setPos((WINDOW_WIDTH - mStatusLabel->boundingRect().width()) / 2,
+                         (WINDOW_HEIGHT - mStatusLabel->boundingRect().height()) / 2);
+
     mScene->addItem(mScore);
     mScene->addItem(mHealth);
-
-    loadSounds();
+    mScene->addItem(mStatusLabel);
 
     mTimer = new QTimer();
     connect(mTimer, SIGNAL(timeout()), this, SLOT(createEnemy()));
     mTimer->start(ENEMY_TIMER_DELAY_MS);
-    mBGM.play();
+
+    mPlaylist = new QMediaPlaylist;
+    mPlaylist->addMedia(QUrl("qrc:/sounds/bgm.ogg"));
+    mPlaylist->setPlaybackMode(QMediaPlaylist::Loop);
+    mBGM = new QMediaPlayer;
+    mBGM->setPlaylist(mPlaylist);
+    mBGM->setVolume(70);
+    mBGM->play();
+
+    connect(this, SIGNAL(healthChanged()), this, SLOT(updateStatus()));
 }
 
 void Game::run()
@@ -53,25 +70,79 @@ void Game::run()
     mView->show();
 }
 
-void Game::playSound(Game::SoundID id)
-{
-    qDebug() << "Boom!!!";
-    mSounds[id].play();
-}
-
 void Game::increaseScore()
 {
     mScore->increase(1);
+    emit scoreChanged();
 }
 
 void Game::decreaseHealth()
 {
     mHealth->decrease(1);
+    emit healthChanged();
+}
+
+void Game::prepareNewGame()
+{
+    QList<QGraphicsItem*> items = mScene->items();
+    for(auto &e: items)
+        if(typeid(*e) == typeid(Enemy))
+            delete e;
+    mStatusLabel->setPlainText("");
+    mStatusLabel->setDefaultTextColor(Qt::transparent);
+    mState = State::PLAY;
+    mScore->set(0);
+    mHealth->set(PLAYER_HEALTH);
+    mTimer->start(ENEMY_TIMER_DELAY_MS);
+}
+
+void Game::togglePause()
+{
+    if(mState == State::PLAY)
+    {
+        mState = State::PAUSE;
+        mStatusLabel->setPlainText("PAUSE");
+        mStatusLabel->setDefaultTextColor(Qt::darkGreen);
+        mTimer->stop();
+        mBGM->pause();
+        mStatusLabel->setPos((WINDOW_WIDTH - mStatusLabel->boundingRect()
+                              .width()) / 2,
+                             (WINDOW_HEIGHT - mStatusLabel->boundingRect()
+                              .height()) / 2);
+    }
+    else if(mState == State::PAUSE)
+    {
+        mStatusLabel->setPlainText("");
+        mStatusLabel->setDefaultTextColor(Qt::transparent);
+        mState = State::PLAY;
+        mTimer->start(ENEMY_TIMER_DELAY_MS);
+        mBGM->play();
+        mStatusLabel->setPos((WINDOW_WIDTH - mStatusLabel->boundingRect()
+                              .width()) / 2,
+                             (WINDOW_HEIGHT - mStatusLabel->boundingRect()
+                              .height()) / 2);
+    }
+}
+
+void Game::updateStatus()
+{
+    if(mHealth->getValue() <= 0)
+    {
+        mState = State::GAME_OVER;
+        mTimer->stop();
+        mStatusLabel->setPlainText("GAME OVER");
+        mStatusLabel->setDefaultTextColor(Qt::red);
+        mStatusLabel->setPos((WINDOW_WIDTH - mStatusLabel->boundingRect()
+                              .width()) / 2,
+                             (WINDOW_HEIGHT - mStatusLabel->boundingRect()
+                              .height()) / 2);
+    }
 }
 
 void Game::createEnemy()
 {
-    Enemy *enemy = new Enemy(this, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_VELOCITY);
+    QPixmap img(":/gfx/enemy.png");
+    Enemy *enemy = new Enemy(this, img, PLAYER_VELOCITY);
     connect(enemy, SIGNAL(bottomLineReached()), this, SLOT(decreaseHealth()));
     mScene->addItem(enemy);
 }
@@ -82,17 +153,4 @@ void Game::centralizeView()
     int dx = (myScreenGeometry.width() - mView->width()) / 2;
     int dy = (myScreenGeometry.height() - mView->height()) / 2;
     mView->move(dx, dy);
-}
-
-void Game::loadSounds()
-{
-    mBGM.openFromFile("resources/sounds/bgm.ogg");
-    mBGM.setLoop(true);
-    mSoundManager.load(SoundID::FIRE_BULLET, "resources/sounds/bullet.wav");
-    sf::Sound sBullet(mSoundManager.get(SoundID::FIRE_BULLET));
-    mSounds.insert(std::make_pair(SoundID::FIRE_BULLET, sBullet));
-
-    mSoundManager.load(SoundID::EXPLOSION, "resources/sounds/Explosion_02.wav");
-    sf::Sound sExplosion(mSoundManager.get(SoundID::EXPLOSION));
-    mSounds.insert(std::make_pair(SoundID::EXPLOSION, sExplosion));
 }

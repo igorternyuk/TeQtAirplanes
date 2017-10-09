@@ -3,9 +3,8 @@
 #include <QObject>
 #include <QString>
 #include "texItem.hpp"
-#include <SFML/Audio.hpp>
-#include "ResourceManager.hpp"
-#include <map>
+#include <QMediaPlayer>
+#include <QMediaPlaylist>
 
 class Player;
 class Score;
@@ -22,6 +21,13 @@ public:
         WINDOW_WIDTH = 800,
         WINDOW_HEIGHT = 600
     };
+    enum class State
+    {
+        PLAY,
+        PAUSE,
+        GAME_OVER
+    };
+
     enum class SoundID
     {
         FIRE_BULLET,
@@ -29,11 +35,16 @@ public:
     };
     explicit Game();
     void run();
-    void playSound(SoundID id);
-
+    inline auto getState() const noexcept { return mState; }
+signals:
+    void scoreChanged();
+    void healthChanged();
 public slots:
     void increaseScore();
     void decreaseHealth();
+    void prepareNewGame();
+    void togglePause();
+    void updateStatus();
 
 private slots:
     void createEnemy();
@@ -48,18 +59,17 @@ private:
         ENEMY_TIMER_DELAY_MS = 2000
     };
 
-
-
     const QString mWindowTitle{"TeQtAirplanes"};
+    State mState{State::PLAY};
     QGraphicsScene *mScene;
     QGraphicsView *mView;
     Player *mPlayer;
     TextItem<int> *mScore;
     TextItem<int> *mHealth;
+    QGraphicsTextItem *mStatusLabel;
     QTimer *mTimer;
-    sf::Music mBGM;
-    ResourceManager<SoundID, sf::SoundBuffer> mSoundManager;
-    std::map<SoundID, sf::Sound> mSounds;
+    QMediaPlaylist *mPlaylist;
+    QMediaPlayer *mBGM;
+
     void centralizeView();
-    void loadSounds();
 };

@@ -5,10 +5,15 @@
 #include <cstdlib>
 #include <QDebug>
 
-Enemy::Enemy(Game *game, double w, double h, double vy, QObject *parent):
-    Entity(game, rand() % int(Game::WINDOW_WIDTH - w),0,w,h,0,vy, parent)
+Enemy::Enemy(Game *game, const QPixmap &image, double vy, QObject *parent):
+    Entity(game, (image.width() / 2 + rand() % int(Game::WINDOW_WIDTH - image.width())),
+           0, image, 0, vy, parent)
 {
+    this->setPixmap(image);
+    this->setTransformOriginPoint(width() / 2, height() / 2);
+    this->setRotation(180);
     mTimer = new QTimer();
+    qDebug() << "New enemy x = " << this->x();
     //connect
     connect(mTimer, SIGNAL(timeout()), this, SLOT(move()));
     mTimer->start(TIMER_DELAY);
@@ -16,13 +21,15 @@ Enemy::Enemy(Game *game, double w, double h, double vy, QObject *parent):
 
 void Enemy::move()
 {
-    if(bottom() >= Game::WINDOW_HEIGHT && !isBottomLineReached)
+    if(mGame->getState() == Game::State::PLAY)
     {
-        //qDebug() << "bottomLineReached";
-        emit bottomLineReached();
-        isBottomLineReached = true;
-    }
-    Entity::move();
+        if(bottom() >= Game::WINDOW_HEIGHT && !isBottomLineReached)
+        {
+            emit bottomLineReached();
+            isBottomLineReached = true;
+        }
+        Entity::move();
+    }    
 }
 
 void Enemy::destroy()

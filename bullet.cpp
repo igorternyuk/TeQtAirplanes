@@ -7,10 +7,12 @@
 #include <typeinfo>
 #include <QDebug>
 
-Bullet::Bullet(Game* game, double x, double y, double w, double h, double vx,
-               double vy, QObject *parent):
-    Entity(game, x,y,w,h,vx,vy, parent)
+Bullet::Bullet(Game* game, double x, double y, const QPixmap &image,
+               double vx, double vy, QObject *parent):
+    Entity(game, x, y, image, vx, vy, parent)
 {
+    mExplosionSound = new QMediaPlayer;
+    mExplosionSound->setMedia(QUrl("qrc:/sounds/Explosion.wav"));
     mTimer = new QTimer();
     //connect
     connect(mTimer, SIGNAL(timeout()), this, SLOT(move()));
@@ -19,13 +21,14 @@ Bullet::Bullet(Game* game, double x, double y, double w, double h, double vx,
 
 void Bullet::move()
 {
-    if(!hasCollisionWithEnemies())
+    if((mGame->getState() == Game::State::PLAY) &&
+            !hasCollisionWithEnemies())
         Entity::move();
 }
 
 void Bullet::destroy()
 {
-    qDebug() << "Bullet has been destroyed";
+    //qDebug() << "Bullet has been destroyed";
     Entity::destroy();
 }
 
@@ -37,12 +40,12 @@ bool Bullet::hasCollisionWithEnemies()
     {
         for(auto &e: collidingEntities)
         {
-            //typeof()
             if(typeid(*e) == typeid(Enemy))
             {
                 mGame->increaseScore();
-                mGame->playSound(Game::SoundID::EXPLOSION);
-                qDebug() << "Collision was detected";
+                if(mExplosionSound->state() == QMediaPlayer::PlayingState)
+                    mExplosionSound->setPosition(0);
+                mExplosionSound->play();
                 scene()->removeItem(e);
                 scene()->removeItem(this);
                 delete e;
